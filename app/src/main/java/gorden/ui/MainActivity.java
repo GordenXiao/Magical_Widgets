@@ -22,5 +22,8 @@ public class MainActivity extends AppCompatActivity {
     public void NiftyDialog(View view){
         startActivity(new Intent(this,NiftyDialogActivity.class));
     }
+    public void ToggleButton(View view){
+        startActivity(new Intent(this,NiftyDialogActivity.class));
+    }
 
 }
