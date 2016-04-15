@@ -30,8 +30,8 @@
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:textAllCaps="false"
-            android:onClick="dialog03"
-            android:text="Null"
+            android:onClick="PolyGonChart"
+            android:text="PolyGonChart"
             />
         <Button
             android:layout_width="wrap_content"

@@ -25,5 +25,8 @@ public class MainActivity extends AppCompatActivity {
     public void ToggleButton(View view){
         startActivity(new Intent(this,ToggleButtonActivity.class));
     }
+    public void PolyGonChart(View view){
+        startActivity(new Intent(this,PolyGonChartActivity.class));
+    }
 
 }

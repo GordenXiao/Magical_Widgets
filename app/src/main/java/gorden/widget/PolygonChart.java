@@ -9,6 +9,7 @@ import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ public class PolygonChart extends View{
     private final int DEFAULT_BORDERSIZE=2;
     private final int DEFAULT_FILLCOLOR=0x5530ce60;
     private final int DEFAULT_TEXTCOLOR=0xFF000000;
+    private final float DEFAULT_CHARTDATA=50;
 
 
     private int sideNum;
@@ -41,7 +43,7 @@ public class PolygonChart extends View{
     private Paint fillPaint;
     private Paint textPaint;
 
-    private float[] chartData=new float[]{50,50,50,50,50};
+    private float[] chartData;
 
     public PolygonChart(Context context) {
         this(context,null);
@@ -54,7 +56,11 @@ public class PolygonChart extends View{
     public PolygonChart(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         TypedArray array=context.obtainStyledAttributes(attrs,R.styleable.PolygonChart);
-        sideNum=DEFAULT_SIDENUM;
+        sideNum=array.getInt(R.styleable.PolygonChart_side_num,DEFAULT_SIDENUM);
+        chartData=new float[sideNum];
+        for(int i=0;i<sideNum;i++){
+            chartData[i]=DEFAULT_CHARTDATA;
+        }
         textPadding=array.getDimension(R.styleable.PolygonChart_textPadding,10);
         maxValue=array.getInt(R.styleable.PolygonChart_max_value,DEFAULT_MAXVALUE);
         borderColor=array.getColor(R.styleable.PolygonChart_border_color,DEFAULT_BORDERCOLOR);
@@ -84,11 +90,41 @@ public class PolygonChart extends View{
      * @param charts
      */
     public void setChartData(float[] charts){
-        if(charts==null||charts.length!=5){
-            Log.d("PolygonChart","setChartData()数值为空，或数值不是5位");
+        if(charts==null||charts.length!=sideNum){
+            Log.d("PolygonChart","setChartData()数值为空，或数值位数不正确");
         }else{
             chartData=charts;
             invalidate();
+        }
+    }
+    public void setChartDataAnimation(float[] charts){
+        postDelayed(new ChartDataRunnable(charts),10);
+    }
+
+    private class ChartDataRunnable implements Runnable{
+        float[] charts;
+        boolean complete=false;
+
+
+        public ChartDataRunnable(float[] charts) {
+            this.charts = charts;
+        }
+
+        @Override
+        public void run() {
+            for(int i=0;i<sideNum;i++){
+                if(chartData[i]<charts[i])
+                    chartData[i]+=1;
+                if(chartData[i]>charts[i])
+                    chartData[i]-=1;
+            }
+            invalidate();
+            if(chartData[0]==charts[0]&&chartData[1]==charts[1]&&chartData[2]==charts[2]&&chartData[3]==charts[3]&&chartData[4]==charts[4]){
+                complete=true;
+            }
+            if(!complete){
+                postDelayed(this,10);
+            }
         }
     }
 
@@ -97,21 +133,22 @@ public class PolygonChart extends View{
      * @param explains
      */
     public void setPointExplain(String[] explains){
-        if(explains==null||explains.length!=5){
-            Log.d("PolygonChart","setPointExplain() 描述为空，或描述不为5位");
+        if(explains==null||explains.length!=sideNum){
+            Log.d("PolygonChart","setPointExplain() 描述为空，或描述数量不对");
         }else{
             pointExplain=explains;
             invalidate();
         }
+    }
+    public void rotateChart(float rotate){
+        animate().rotation(rotate).start();
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         viewWidth=getMeasuredSize(widthMeasureSpec,true);
         viewHeight=getMeasuredSize(heightMeasureSpec,false);
-        viewWidth=Math.max(viewWidth,viewHeight);
         setMeasuredDimension(viewWidth,viewHeight);
-        Log.e("XXXXXXXXXXXX","onMeasure:"+viewWidth+" : "+viewHeight);
     }
 
     /**
@@ -127,9 +164,12 @@ public class PolygonChart extends View{
         int retSize = 0;
         // 对不同的指定模式进行判断
         if(specMode==MeasureSpec.EXACTLY){  // 显式指定大小，如40dp或fill_parent
-            retSize = specSize+2*calculatePadding(isWidth);
+            retSize = specSize;
+            if(retSize<2*calculatePadding(isWidth)){
+                retSize = (int) (specSize+2*calculatePadding(isWidth));
+            }
         }else{                              // 如使用wrap_content
-            retSize = isWidth? 200+2*calculatePadding(true) : 200 + 2*calculatePadding(false);
+            retSize = (int) (isWidth? 200+2*calculatePadding(true) : 200 + 2*calculatePadding(false));
             if(specMode==MeasureSpec.UNSPECIFIED){
                 retSize = Math.min(retSize, specSize);
             }
@@ -152,11 +192,33 @@ public class PolygonChart extends View{
      */
     private void drawExplain(Canvas canvas) {
         List<PointF> pointfList=calculatePoints();
-        canvas.drawText(pointExplain[0],pointfList.get(0).x-textPaint.measureText(pointExplain[0])/2,pointfList.get(0).y-textPadding,textPaint);
-        canvas.drawText(pointExplain[1],pointfList.get(1).x+textPadding,pointfList.get(1).y,textPaint);
-        canvas.drawText(pointExplain[2],pointfList.get(2).x-textPaint.measureText(pointExplain[2])/2,pointfList.get(2).y+textSize+textPadding,textPaint);
-        canvas.drawText(pointExplain[3],pointfList.get(3).x-textPaint.measureText(pointExplain[3])/2,pointfList.get(3).y+textPadding+textSize,textPaint);
-        canvas.drawText(pointExplain[4],pointfList.get(4).x-textPaint.measureText(pointExplain[4])-textPadding,pointfList.get(4).y,textPaint);
+        PointF circle=pointfList.get(pointfList.size()-1);
+        for(int i=0;i<pointfList.size()-1;i++){
+            PointF tmpPoint=pointfList.get(i);
+            float drawX=tmpPoint.x;
+            float drawY=tmpPoint.y;
+            if(tmpPoint.x<circle.x){
+                drawX=tmpPoint.x-textPaint.measureText(pointExplain[i])-textPadding;
+            }
+            if(tmpPoint.x>circle.x){
+                drawX=tmpPoint.x+textPadding;
+            }
+            if(Math.abs(tmpPoint.x-circle.x)<5){
+                drawX=tmpPoint.x-textPaint.measureText(pointExplain[i])/2;
+            }
+            if(tmpPoint.y<circle.y){
+                drawY=tmpPoint.y-textPadding;
+            }
+            if(tmpPoint.y>circle.y){
+                //TODO 字体高度
+                drawY=tmpPoint.y+textPadding+textSize;
+            }
+            if(Math.abs(tmpPoint.y-circle.y)<2){
+                drawY=tmpPoint.y+textSize/2;
+
+            }
+            canvas.drawText(pointExplain[i],drawX,drawY,textPaint);
+        }
     }
 
     /**
@@ -166,7 +228,7 @@ public class PolygonChart extends View{
     private void drawChart(Canvas canvas) {
         List<PointF> pointfList=calculatePoints();
         Path path=new Path();
-        float multiple=chartData[0]/maxValue;
+        float multiple=chartData[0]/maxValue;;
         path.moveTo(pointfList.get(pointfList.size()-1).x+(pointfList.get(0).x-pointfList.get(pointfList.size()-1).x)*multiple,pointfList.get(pointfList.size()-1).y-(pointfList.get(pointfList.size()-1).y-pointfList.get(0).y)*multiple);
         for(int i=1;i<pointfList.size()-1;i++){
             multiple=chartData[i]/maxValue;
@@ -194,33 +256,42 @@ public class PolygonChart extends View{
         path.close();
         canvas.drawPath(path,borderPaint);
     }
+
+    /**
+     * 计算多边形的顶点
+     * @return
+     */
     private List<PointF> calculatePoints(){
-        double angle=360/sideNum;
-        float radio=viewHeight/2-calculatePadding(false);
-        float polygonWidth= (float) (2*Math.sin(angle*Math.PI/180)*radio);
-        float polygonHeight= (float) (viewHeight/2-calculatePadding(false)+Math.cos(angle/2*Math.PI/180)*radio);
-
-        float offsetX=(viewWidth-polygonWidth)/2;
-        float offsetY=(viewHeight-polygonHeight)/2;
-        Log.e("XXXXXX","offsetX    "+offsetX+" : "+offsetY+"     "+polygonWidth+" : "+polygonHeight);
+        float angle=360/sideNum;
+        float radio=Math.min(viewHeight/2-calculatePadding(false),viewWidth/2-calculatePadding(true));//多边形半径
+        float circleX=viewWidth/2;
+        float circleY=viewHeight/2;
+        float maxY=0;
+        float minY=circleY;
         List<PointF> points=new ArrayList<PointF>();
-        points.add(new PointF(viewWidth/2,offsetY));
-        points.add(new PointF(polygonWidth+offsetX, (float) (offsetY+radio-Math.cos(angle*Math.PI/180)*radio)));
-
-        points.add(new PointF(viewWidth/2+(float) (Math.sin(angle/2*Math.PI/180)*radio),polygonHeight+offsetY));
-        points.add(new PointF(viewWidth/2-(float) (Math.sin(angle/2*Math.PI/180)*radio),polygonHeight+offsetY));
-        points.add(new PointF(offsetX, (float) (offsetY+radio-Math.cos(angle*Math.PI/180)*radio)));
-        points.add(new PointF(viewWidth/2,radio+offsetY));
+        for(int i=0;i<sideNum;i++){
+            float tmpAngle=angle*i;
+            float tmpX= (float) (Math.sin(tmpAngle*Math.PI/180)*radio);
+            float tmpY= (float) (Math.cos(tmpAngle*Math.PI/180)*radio);
+            minY=Math.min(circleY-tmpY,minY);
+            maxY=Math.max(circleY-tmpY,maxY);
+            points.add(new PointF(tmpX+circleX,-tmpY+circleY));
+        }
+        points.add(new PointF(circleX,circleY));
+        float offsetY=(viewHeight-maxY-minY)/2;
+        for(int i=0;i<points.size();i++){
+            points.set(i,new PointF(points.get(i).x,points.get(i).y+offsetY));
+        }
         return points;
     }
 
     /**
-     * 计算描述需要溜边
+     * 计算顶点描述需要留的padding
      * @return
      */
-    private int calculatePadding(boolean isWidth){
+    private float calculatePadding(boolean isWidth){
         int padding=0;
-        if(pointExplain==null)return padding;
+        if(pointExplain==null)return textPadding;
         if(isWidth){
             for(String ss:pointExplain){
                 padding= Math.max((int) textPaint.measureText(ss),padding);
