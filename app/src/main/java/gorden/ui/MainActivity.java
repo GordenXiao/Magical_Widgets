@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this,NiftyDialogActivity.class));
     }
     public void ToggleButton(View view){
-        startActivity(new Intent(this,NiftyDialogActivity.class));
+        startActivity(new Intent(this,ToggleButtonActivity.class));
     }
 
 }

@@ -16,6 +16,7 @@
             </intent-filter>
         </activity>
         <activity android:name="gorden.ui.NiftyDialogActivity"/>
+        <activity android:name="gorden.ui.ToggleButtonActivity"/>
     </application>
 
 </manifest>
