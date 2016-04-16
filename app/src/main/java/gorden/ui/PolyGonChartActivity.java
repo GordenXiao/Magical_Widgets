@@ -25,10 +25,19 @@ public class PolyGonChartActivity extends Activity{
     public void addExplain(View view){
         polay.setPointExplain(new String[]{"人脉关系","成交率","信誉度","好评率","行为"});
     }
+    public void addExplain1(View view){
+        polay.clearPointExplain();
+    }
     public void rotateChart(View view){
         polay.setChartDataAnimation(new float[]{77,98,90,83,95});
     }
     public void rotateChart1(View view){
         polay.setChartDataAnimation(new float[]{20,30,15,45,26});
+    }
+    public void addPoint(View view){
+        polay.setSideNum(polay.getSideNum()+1);
+    }
+    public void removePoint(View view){
+        polay.setSideNum(polay.getSideNum()-1);
     }
 }

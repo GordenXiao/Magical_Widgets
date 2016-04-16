@@ -6,10 +6,9 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
-import android.view.animation.Animation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,6 @@ public class PolygonChart extends View{
     private int fillColor;
     private float textSize=22;
     private float textPadding=10;
-    private String[] pointExplain=new String[]{"人脉关系","成交率","信誉度","好评率","行为"};
 
 
     private int viewWidth,viewHeight;
@@ -44,6 +42,57 @@ public class PolygonChart extends View{
     private Paint textPaint;
 
     private float[] chartData;
+    private String[] pointExplain;
+
+    private boolean isRunning =false;
+
+    public void setSideNum(int sideNum) {
+        this.sideNum = Math.max(3,sideNum);
+//        if(chartData.length<sideNum){
+//            int temp=chartData.length;
+//            chartData= Arrays.copyOf(chartData,sideNum);
+//        }
+        invalidate();
+    }
+
+    public void setMaxValue(int maxValue) {
+        this.maxValue = maxValue;
+        invalidate();
+    }
+
+    public void setBorderColor(int borderColor) {
+        this.borderColor = borderColor;
+        invalidate();
+    }
+
+    public void setTextColor(int textColor) {
+        this.textColor = textColor;
+        invalidate();
+    }
+
+    public void setBorderSize(float borderSize) {
+        this.borderSize = borderSize;
+        invalidate();
+    }
+
+    public void setFillColor(int fillColor) {
+        this.fillColor = fillColor;
+        invalidate();
+    }
+
+    public void setTextSize(float textSize) {
+        this.textSize = textSize;
+        invalidate();
+    }
+
+    public void setTextPadding(float textPadding) {
+        this.textPadding = textPadding;
+        invalidate();
+    }
+
+    public int getSideNum() {
+        return sideNum;
+    }
 
     public PolygonChart(Context context) {
         this(context,null);
@@ -90,40 +139,50 @@ public class PolygonChart extends View{
      * @param charts
      */
     public void setChartData(float[] charts){
-        if(charts==null||charts.length!=sideNum){
-            Log.d("PolygonChart","setChartData()数值为空，或数值位数不正确");
-        }else{
+        if(charts!=null&&!isRunning){
             chartData=charts;
             invalidate();
         }
     }
     public void setChartDataAnimation(float[] charts){
-        postDelayed(new ChartDataRunnable(charts),10);
+        if(charts!=null&&!isRunning){
+            post(new ChartDataRunnable(charts));
+        }
     }
 
+    /**
+     * 动画形式修改数据
+     */
     private class ChartDataRunnable implements Runnable{
         float[] charts;
         boolean complete=false;
-
-
+        float bulking=5;
         public ChartDataRunnable(float[] charts) {
             this.charts = charts;
+            isRunning =true;
         }
 
         @Override
         public void run() {
-            for(int i=0;i<sideNum;i++){
-                if(chartData[i]<charts[i])
-                    chartData[i]+=1;
-                if(chartData[i]>charts[i])
-                    chartData[i]-=1;
+            complete=true;
+            for(int i=0;i<Math.min(sideNum,charts.length);i++){
+                if(Math.abs(chartData[i]-charts[i])<bulking)
+                    chartData[i]=charts[i];
+                if(chartData[i]<charts[i]){
+                    chartData[i]+=bulking;
+                    complete=false;
+                }
+
+                if(chartData[i]>charts[i]){
+                    chartData[i]-=bulking;
+                    complete=false;
+                }
             }
             invalidate();
-            if(chartData[0]==charts[0]&&chartData[1]==charts[1]&&chartData[2]==charts[2]&&chartData[3]==charts[3]&&chartData[4]==charts[4]){
-                complete=true;
-            }
-            if(!complete){
-                postDelayed(this,10);
+            if(complete){
+                isRunning =false;
+            }else{
+                post(this);
             }
         }
     }
@@ -133,15 +192,12 @@ public class PolygonChart extends View{
      * @param explains
      */
     public void setPointExplain(String[] explains){
-        if(explains==null||explains.length!=sideNum){
-            Log.d("PolygonChart","setPointExplain() 描述为空，或描述数量不对");
-        }else{
-            pointExplain=explains;
-            invalidate();
-        }
+        pointExplain=explains;
+        invalidate();
     }
-    public void rotateChart(float rotate){
-        animate().rotation(rotate).start();
+    public void clearPointExplain(){
+        pointExplain=null;
+        invalidate();
     }
 
     @Override
@@ -193,7 +249,7 @@ public class PolygonChart extends View{
     private void drawExplain(Canvas canvas) {
         List<PointF> pointfList=calculatePoints();
         PointF circle=pointfList.get(pointfList.size()-1);
-        for(int i=0;i<pointfList.size()-1;i++){
+        for(int i=0;i<Math.min(pointExplain.length,pointfList.size()-1);i++){
             PointF tmpPoint=pointfList.get(i);
             float drawX=tmpPoint.x;
             float drawY=tmpPoint.y;
@@ -210,11 +266,10 @@ public class PolygonChart extends View{
                 drawY=tmpPoint.y-textPadding;
             }
             if(tmpPoint.y>circle.y){
-                //TODO 字体高度
-                drawY=tmpPoint.y+textPadding+textSize;
+                drawY=tmpPoint.y+textPadding+calculateTextSize(pointExplain[i],false);
             }
             if(Math.abs(tmpPoint.y-circle.y)<2){
-                drawY=tmpPoint.y+textSize/2;
+                drawY=tmpPoint.y+calculateTextSize(pointExplain[i],false)/2;
 
             }
             canvas.drawText(pointExplain[i],drawX,drawY,textPaint);
@@ -230,11 +285,14 @@ public class PolygonChart extends View{
         Path path=new Path();
         float multiple=chartData[0]/maxValue;;
         path.moveTo(pointfList.get(pointfList.size()-1).x+(pointfList.get(0).x-pointfList.get(pointfList.size()-1).x)*multiple,pointfList.get(pointfList.size()-1).y-(pointfList.get(pointfList.size()-1).y-pointfList.get(0).y)*multiple);
-        for(int i=1;i<pointfList.size()-1;i++){
+        for(int i=1;i<Math.min(chartData.length,pointfList.size()-1);i++){
             multiple=chartData[i]/maxValue;
             float dx=pointfList.get(pointfList.size()-1).x+(pointfList.get(i).x-pointfList.get(pointfList.size()-1).x)*multiple;
             float dy=pointfList.get(pointfList.size()-1).y-(pointfList.get(pointfList.size()-1).y-pointfList.get(i).y)*multiple;
             path.lineTo(dx,dy);
+        }
+        if(chartData.length<pointfList.size()-1){
+            path.lineTo(pointfList.get(pointfList.size()-1).x,pointfList.get(pointfList.size()-1).y);
         }
         path.close();
         canvas.drawPath(path,fillPaint);
@@ -301,5 +359,11 @@ public class PolygonChart extends View{
             padding= (int) (textSize+textPadding);
         }
         return padding;
+    }
+
+    private float calculateTextSize(String str,boolean isWidth){
+        Rect rect=new Rect();
+        textPaint.getTextBounds(str,0,str.length(),rect);
+        return isWidth?rect.width():rect.height();
     }
 }

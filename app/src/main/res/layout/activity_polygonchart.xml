@@ -6,15 +6,15 @@
     <gorden.widget.PolygonChart
         android:id="@+id/polay"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="300dp"
         app:border_color="#00ff84"
         android:layout_gravity="center"
         app:border_size="1dp"
         app:fill_color="#5536daa3"
         app:max_value="100"
-        app:side_num="5"
+        app:side_num="115"
         app:text_color="#5b331f"
-        app:text_size="15sp"
+        app:text_size="14sp"
         app:textPadding="3dp"
         />
     <View
@@ -37,6 +37,12 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="删除描述"
+        android:onClick="addExplain1"
+        />
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:text="刷新数据动态1"
         android:onClick="rotateChart"
         />
@@ -45,5 +51,17 @@
         android:layout_height="wrap_content"
         android:text="刷新数据动态2"
         android:onClick="rotateChart1"
+        />
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="增加点"
+        android:onClick="addPoint"
+        />
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="减少点"
+        android:onClick="removePoint"
         />
 </LinearLayout>
