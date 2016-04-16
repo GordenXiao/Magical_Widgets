@@ -8,6 +8,7 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -62,26 +63,31 @@ public class PolygonChart extends View{
 
     public void setBorderColor(int borderColor) {
         this.borderColor = borderColor;
+        init();
         invalidate();
     }
 
     public void setTextColor(int textColor) {
         this.textColor = textColor;
+        init();
         invalidate();
     }
 
     public void setBorderSize(float borderSize) {
         this.borderSize = borderSize;
+        init();
         invalidate();
     }
 
     public void setFillColor(int fillColor) {
         this.fillColor = fillColor;
+        init();
         invalidate();
     }
 
     public void setTextSize(float textSize) {
         this.textSize = textSize;
+        init();
         invalidate();
     }
 
@@ -172,7 +178,6 @@ public class PolygonChart extends View{
                     chartData[i]+=bulking;
                     complete=false;
                 }
-
                 if(chartData[i]>charts[i]){
                     chartData[i]-=bulking;
                     complete=false;
@@ -320,7 +325,7 @@ public class PolygonChart extends View{
      * @return
      */
     private List<PointF> calculatePoints(){
-        float angle=360/sideNum;
+        float angle=360f/sideNum;
         float radio=Math.min(viewHeight/2-calculatePadding(false),viewWidth/2-calculatePadding(true));//多边形半径
         float circleX=viewWidth/2;
         float circleY=viewHeight/2;

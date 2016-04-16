@@ -1,6 +1,7 @@
 package gorden.ui;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 
@@ -17,6 +18,7 @@ public class PolyGonChartActivity extends Activity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_polygonchart);
         polay= (PolygonChart) findViewById(R.id.polay);
+        polay.setFillColor(Color.parseColor("#55ff0000"));
     }
 
     public void refreshChart(View view){
