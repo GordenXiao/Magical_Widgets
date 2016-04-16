@@ -27,8 +27,8 @@ public class PolygonChart extends View{
     private final float DEFAULT_CHARTDATA=50;
 
 
-    private int sideNum;
-    private int maxValue;
+    private int sideNum;    //多边形边数
+    private int maxValue;   //每个点最大数据值
     private int borderColor;
     private int textColor;
     private float borderSize;
@@ -42,8 +42,8 @@ public class PolygonChart extends View{
     private Paint fillPaint;
     private Paint textPaint;
 
-    private float[] chartData;
-    private String[] pointExplain;
+    private float[] chartData;  //每个点的数据值
+    private String[] pointExplain;     //每个点的描述
 
     private boolean isRunning =false;
 

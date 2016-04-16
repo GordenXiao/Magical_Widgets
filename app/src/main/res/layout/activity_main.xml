@@ -57,5 +57,14 @@
             android:onClick="dialog06"
             android:text="Null"
             />
+        <gorden.widget.DragIndicatorView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="50dp"
+            android:text="2"
+            android:textColor="#ffffff"
+            android:background="#442200"
+            />
     </GridLayout>
+
 </RelativeLayout>
