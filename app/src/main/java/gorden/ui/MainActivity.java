@@ -28,5 +28,8 @@ public class MainActivity extends AppCompatActivity {
     public void PolyGonChart(View view){
         startActivity(new Intent(this,PolyGonChartActivity.class));
     }
+    public void DragIndicator(View view){
+        startActivity(new Intent(this,DragIndicatorActivity.class));
+    }
 
 }

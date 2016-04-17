@@ -18,6 +18,7 @@
         <activity android:name="gorden.ui.NiftyDialogActivity"/>
         <activity android:name="gorden.ui.ToggleButtonActivity"/>
         <activity android:name="gorden.ui.PolyGonChartActivity"/>
+        <activity android:name="gorden.ui.DragIndicatorActivity"/>
     </application>
 
 </manifest>

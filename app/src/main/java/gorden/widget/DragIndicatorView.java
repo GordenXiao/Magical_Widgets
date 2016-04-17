@@ -2,10 +2,12 @@ package gorden.widget;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.TypeEvaluator;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -16,6 +18,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -34,19 +37,17 @@ import android.widget.TextView;
 public class DragIndicatorView extends TextView{
     private int drawColor = Color.RED;
     private static float DEFAULT_VISCOUS_VALUE = 0.15f;//粘滞系数
+    private boolean outSide=false;
+    private boolean dragEnable=true;
 
     private Paint mPaint;
     private int mRadius = 0;
     private float mViscous = DEFAULT_VISCOUS_VALUE;
     private float mOriginX = 0;
     private float mOriginY = 0;
-    private int mCenterX = 0;
-    private int mCenterY = 0;
 
     private float mDx = 0;
     private float mDy = 0;
-
-    //private int mDismissDetectDistance = DEFAULT_DISTANCE;//超过此距离 判定为让提示View消失
 
     private ViewGroup mRootView;//根布局视图 作为画板使用
     private DragIndicatorView mCloneView;
@@ -60,12 +61,14 @@ public class DragIndicatorView extends TextView{
     }
 
     public DragIndicatorView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        initView(context);
+        this(context, attrs,0);
     }
 
     public DragIndicatorView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        TypedArray array=context.obtainStyledAttributes(attrs,R.styleable.DragIndicatorView);
+        drawColor=array.getColor(R.styleable.DragIndicatorView_drawColor,Color.RED);
+        dragEnable=array.getBoolean(R.styleable.DragIndicatorView_dragEnable,true);
         initView(context);
     }
 
@@ -77,7 +80,7 @@ public class DragIndicatorView extends TextView{
 
     private void initView(Context context) {
         setGravity(Gravity.CENTER);//内容居中
-
+        setIncludeFontPadding(false);
         mPaint = new Paint();
         mPaint.setColor(drawColor);
         mPaint.setAntiAlias(true);
@@ -119,43 +122,17 @@ public class DragIndicatorView extends TextView{
      */
     private void drawBackground(Canvas canvas) {
         mRadius = Math.min(getMeasuredWidth(), getMeasuredHeight()) >> 1;
-
-//        canvas.drawCircle(getWidth() >> 1, getHeight() >> 1, mRadius, mPaint);
         float right=getMeasuredWidth();
         float bottom=getMeasuredHeight();
-        if(right<bottom){
-            setMeasuredDimension((int) bottom*5,(int)bottom*5);
-            Log.e("XXXXXXXXXX","setMeasuredDimension");
-        }
-        right=getMeasuredWidth();
-        bottom=getMeasuredHeight();
-        right=Math.max(right,bottom);
-
         RectF rectF=new RectF(0f,0f,right,bottom);
-        canvas.drawRoundRect(rectF,getMeasuredHeight(),getMeasuredHeight(),mPaint);
+        canvas.drawRoundRect(rectF,getMeasuredHeight()/2,getMeasuredHeight()/2,mPaint);
     }
 
-//    @Override
-//    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-//        setMeasuredDimension(getMeasuredSize(widthMeasureSpec,true),getMeasuredSize(heightMeasureSpec,false));
-//    }
-    private int getMeasuredSize(int length, boolean isWidth){
-        int specMode = MeasureSpec.getMode(length);
-        int specSize = MeasureSpec.getSize(length);
-        // 计算所得的实际尺寸，要被返回
-        int retSize = 0;
-        // 对不同的指定模式进行判断
-        if(specMode==MeasureSpec.EXACTLY){  // 显式指定大小，如40dp或fill_parent
-            retSize = specSize;
-        }else{                              // 如使用wrap_content
-            retSize = (int) (isWidth? calculateTextSize(getText().toString(),true)+getCompoundPaddingLeft()+getCompoundPaddingRight(): calculateTextSize(getText().toString(),false)+
-            getCompoundPaddingTop()+getCompoundPaddingBottom());
-            Log.e("XXXXXXXXX","text  : "+getText()+"     "+getWidth()+" "+getHeight());
-            if(specMode==MeasureSpec.UNSPECIFIED){
-                retSize = Math.min(retSize, specSize);
-            }
-        }
-        return retSize;
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int width=(int) calculateTextSize(getText().toString(),true)+(int) getPaint().getTextSize();
+        int height=(int)calculateTextSize(getText().toString(),false)+(int) getPaint().getTextSize();
+        setMeasuredDimension(Math.max(width,height),height);
     }
     private float calculateTextSize(String str,boolean isWidth){
         Rect rect=new Rect();
@@ -164,6 +141,9 @@ public class DragIndicatorView extends TextView{
     }
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if(!dragEnable){
+            return false;
+        }
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 //System.out.println("down");
@@ -173,14 +153,13 @@ public class DragIndicatorView extends TextView{
                 if (mParentView != null) {//屏蔽父控件的事件响应
                     mParentView.requestDisallowInterceptTouchEvent(true);
                 }
-
+                outSide=false;
                 mDx = event.getX();
                 mDy = event.getY();
                 mOriginX = event.getRawX() - mDx + (getWidth() >> 1);
                 mOriginY = event.getRawY() - mDy + (getHeight() >> 1);
                 break;
             case MotionEvent.ACTION_MOVE:
-                //System.out.println("move");
                 if (getVisibility() == View.VISIBLE) {
                     setVisibility(View.INVISIBLE);
 
@@ -191,8 +170,6 @@ public class DragIndicatorView extends TextView{
                     mCloneView = cloneSelfView();
                     mRootView.addView(mCloneView, getLayoutParams());
                 }//end if
-
-
                 if (mCloneView != null) {
                     mCloneView.setX(event.getRawX() - mDx);
                     mCloneView.setY(event.getRawY() - mDy);
@@ -218,10 +195,17 @@ public class DragIndicatorView extends TextView{
                         mRootView.removeView(mCloneView);
                         mCloneView = null;
                     }
+                }else if(outSide&&mSpringView.radius<mRadius/3){
+                    killView(event.getRawX(), event.getRawY());
+                    mRootView.removeView(mSpringView);
+                    mSpringView = null;
+
+                    if (mCloneView != null) {
+                        mRootView.removeView(mCloneView);
+                        mCloneView = null;
+                    }
                 } else {//不取消
-                    // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
-                    //setVisibility(View.VISIBLE);
-                    if (mSpringView != null && mSpringView.spring_len > 1f) {//存在弹性势能  显示弹性动画效果
+                    if (mSpringView != null && mSpringView.spring_len > 1f&&!outSide) {//存在弹性势能  显示弹性动画效果
                         mSpringView.startSpringAction();
                     } else {
                         resetView();
@@ -328,6 +312,7 @@ public class DragIndicatorView extends TextView{
         textView.setGravity(getGravity());
         textView.setPadding(getPaddingLeft(), getPaddingTop(), getPaddingRight(), getPaddingBottom());
         textView.setEnabled(false);
+        textView.setDrawColor(drawColor);
         return textView;
     }
 
@@ -347,6 +332,27 @@ public class DragIndicatorView extends TextView{
      */
     public void setViscous(float mViscous) {
         this.mViscous = mViscous;
+    }
+
+    public int getDrawColor() {
+        return drawColor;
+    }
+
+    public void setDrawColor(int drawColor) {
+        this.drawColor = drawColor;
+        mPaint.setColor(this.drawColor);
+    }
+    public void setDrawColorResource(int resId) {
+        this.drawColor = ContextCompat.getColor(getContext(),resId);
+        mPaint.setColor(drawColor);
+    }
+
+    public boolean isDragEnable() {
+        return dragEnable;
+    }
+
+    public void setDragEnable(boolean dragEnable) {
+        this.dragEnable = dragEnable;
     }
 
     public interface OnIndicatorDismiss {
@@ -397,7 +403,7 @@ public class DragIndicatorView extends TextView{
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (radius > 0) {
+            if (radius > 0&&!outSide) {
                 canvas.drawPath(mPath, mPaint);//draw path
                 canvas.drawCircle(from_x, from_y, radius, mPaint);
             }//end if
@@ -429,15 +435,13 @@ public class DragIndicatorView extends TextView{
             }//end if
 
             float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            //radius = (float)mRadius/(distance + 1);
-            //  r = R - R * (1 -1/d));
+
             radius = mRadius - mViscous * distance;
             if (radius < 0.2f * mRadius) {
                 radius = 0;
             }
 
             if (radius > 0) {
-                // (1 , 0)  (x,y)
                 double cos_delta = deltaX / distance;
                 double angle = Math.acos(cos_delta);
                 double circle_from_thela1 = angle + Math.PI / 2;
@@ -475,6 +479,7 @@ public class DragIndicatorView extends TextView{
                 spring_len = distance;
             } else {
                 spring_len = 0;
+                outSide=true;
             }
 
             invalidate();
@@ -514,4 +519,15 @@ public class DragIndicatorView extends TextView{
             postInvalidate();
         }
     }//end inner class
+
+    private class PointEvaluator implements TypeEvaluator<Point> {
+
+        @Override
+        public Point evaluate(float fraction, Point startValue, Point endValue) {
+            float x = startValue.x + fraction * (endValue.x - startValue.x);
+            float y = startValue.y + fraction * (endValue.y - startValue.y);
+            Point point = new Point((int) x, (int)y);
+            return point;
+        }
+    }
 }

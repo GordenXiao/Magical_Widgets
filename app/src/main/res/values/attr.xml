@@ -10,5 +10,9 @@
         <attr name="text_color" format="color"></attr>
         <attr name="fill_color" format="color"></attr>
     </declare-styleable>
+    <declare-styleable name="DragIndicatorView">
+        <attr name="drawColor" format="color"/>
+        <attr name="dragEnable" format="boolean"/>
+    </declare-styleable>
 
 </resources>
